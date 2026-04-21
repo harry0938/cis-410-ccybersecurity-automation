@@ -1,0 +1,58 @@
+# .github/workflows/hello-pipeline.yml
+# Runs on every push to main — proves the pipeline mechanism works
+
+name: Hello Pipeline
+
+# Trigger: this workflow runs automatically whenever a commit is pushed to main.
+# workflow_dispatch can be added later to allow manual runs from the Actions tab.
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  pipeline:
+    name: Run Pipeline Stages
+
+    # runs-on: self-hosted tells GitHub Actions to send this job to YOUR runner VM
+    # instead of a GitHub-hosted cloud runner. The runner agent must be online
+    # and registered to this repo before the job will pick up.
+    runs-on: self-hosted
+
+    steps:
+      # Step 1: Check out the repository code onto the runner VM.
+      # Without this step the runner has no access to your files —
+      # every workflow that needs your code must start here.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Build stage — simulates the compile/build phase.
+      # github.sha is the full commit hash that triggered this run.
+      # github.ref_name is the branch name (e.g. "main").
+      # These context variables are injected by GitHub Actions at runtime.
+      - name: Build stage
+        run: |
+          echo '=== BUILD STAGE ==='
+          echo "Runner hostname: $(hostname)"
+          echo "Triggered by commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+
+      # Step 3: Test stage — placeholder for automated tests.
+      # In a real pipeline this step runs your test suite (pytest, jest, etc.)
+      # and fails the workflow if any test fails, blocking the deploy step below.
+      # Security scanning (Semgrep, Trivy) replaces this placeholder in Week 5.
+      - name: Test stage
+        run: |
+          echo '=== TEST STAGE ==='
+          echo 'No automated tests yet — security scanning added in Week 5'
+          echo 'All checks passed!'
+
+      # Step 4: Deploy stage — placeholder for the actual deployment.
+      # In Week 3 this step will SSH into the Dev VM and run docker compose up
+      # to deploy the containerized application. For now it just prints a message
+      # so you can verify the full pipeline runs end-to-end without errors.
+      - name: Deploy stage
+        run: |
+          echo '=== DEPLOY STAGE ==='
+          echo 'Real deployment added in Week 3 (Docker + Dev VM + SSH)'
+          echo 'Pipeline completed successfully!'
