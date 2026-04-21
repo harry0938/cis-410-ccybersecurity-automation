@@ -8,3 +8,4 @@ I am taking CIS 410 to learn more about DevSecOps, Git, automation, CI/CD, and c
 
 This repository was created for the Week 1 lab assignment.
 pipeline rerun
+second real run after workflow added
