@@ -1,0 +1,126 @@
+/* CorpDirectory — shared stylesheet (secure app)
+   Served as a static file so CSP style-src 'self' applies — no unsafe-inline needed */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --ink:#0f0f14;--ink2:#3a3a4a;--ink3:#6b6b80;--ink4:#9999aa;
+  --surface:#fff;--surface2:#f7f7fa;--surface3:#f0f0f5;
+  --line:rgba(0,0,0,.07);--line2:rgba(0,0,0,.12);
+  --green:#166534;--green-bg:#f0fdf4;--green-border:#86efac;
+  --blue:#1e40af;--blue-bg:#eff6ff;--blue-border:#93c5fd;
+  --mono:'Consolas','Menlo',monospace;
+  --sans:'Inter',-apple-system,'Segoe UI',Arial,sans-serif;
+}
+
+body{font-family:var(--sans);background:var(--surface2);color:var(--ink);font-size:13.5px;line-height:1.6;min-height:100vh}
+
+/* ── Topbar ── */
+.topbar{background:#0f0f14;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-mark{width:34px;height:34px;background:#166534;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-mark svg{width:19px;height:19px}
+.brand-name{font-size:15px;font-weight:600;color:#fff;letter-spacing:-.3px}
+.brand-sub{font-size:11px;color:rgba(255,255,255,.33);letter-spacing:.1px}
+.env-tag{display:flex;align-items:center;gap:7px;background:rgba(22,101,52,.2);border:1px solid rgba(134,239,172,.4);padding:5px 12px;border-radius:6px}
+.env-dot{width:7px;height:7px;border-radius:50%;background:#4ade80}
+.env-label{font-size:11.5px;font-weight:500;color:#86efac;letter-spacing:.2px}
+
+/* ── Nav ── */
+.nav{background:rgba(15,15,20,.97);border-bottom:1px solid rgba(255,255,255,.06);padding:0 24px;display:flex}
+.nav a{font-size:13px;color:rgba(255,255,255,.45);padding:12px 16px;text-decoration:none;border-bottom:2px solid transparent;display:flex;align-items:center;gap:7px}
+.nav a svg{width:14px;height:14px;opacity:.6}
+.nav a:hover{color:rgba(255,255,255,.75)}
+.nav a.active{color:#fff;border-bottom-color:#4ade80}
+.nav a.active svg{opacity:1}
+
+/* ── Main content ── */
+.main{max-width:920px;margin:0 auto;padding:32px 24px 64px}
+.page-title{font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-.3px;margin-bottom:5px}
+.page-sub{font-size:13px;color:var(--ink3);margin-bottom:28px}
+
+/* ── Secure bar ── */
+.secure-bar{background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:15px 18px;margin-bottom:28px;display:flex;gap:13px;align-items:flex-start}
+.secure-stripe{width:3px;background:#4ade80;border-radius:2px;flex-shrink:0;align-self:stretch}
+.secure-icon{width:22px;height:22px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.secure-icon svg{width:12px;height:12px}
+.secure-title{font-size:13px;font-weight:600;color:#14532d;margin-bottom:3px}
+.secure-body{font-size:12.5px;color:#166534;line-height:1.55}
+
+/* ── Panel ── */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.panel-header{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:13px;font-weight:600;color:var(--ink)}
+.panel-meta{font-size:11.5px;color:var(--ink4)}
+
+/* ── Code / badges / tags ── */
+code,.code{font-family:var(--mono);font-size:11px;background:var(--surface3);padding:1px 5px;border-radius:4px;color:var(--ink2)}
+.badge-ok{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.3px;background:#dcfce7;color:#14532d;white-space:nowrap;flex-shrink:0}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--ink4);background:var(--surface3);border:0.5px solid var(--line2);border-radius:4px;padding:1px 6px;margin-top:4px}
+
+/* ── Footer ── */
+footer{text-align:center;font-size:11px;color:var(--ink4);padding:28px 0 16px;border-top:1px solid var(--line);margin-top:36px;letter-spacing:.1px}
+
+/* ── Cards (2-col for secure overview) ── */
+.card-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:28px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;text-decoration:none;color:inherit;display:block}
+.card:hover{border-color:var(--line2);transform:translateY(-1px)}
+.card-eyebrow{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.eyebrow-dot{width:6px;height:6px;border-radius:50%}
+.card-title{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.card-desc{font-size:12px;color:var(--ink3);line-height:1.55}
+
+/* ── Eyebrow color variants ── */
+.eyebrow-blue{color:#1e40af}
+.eyebrow-dot-blue{background:#1e40af}
+.eyebrow-green{color:#166534}
+.eyebrow-dot-green{background:#4ade80}
+
+/* ── Fix rows (secure overview panel) ── */
+.fix-row{display:flex;align-items:flex-start;gap:13px;padding:13px 20px;border-bottom:1px solid rgba(0,0,0,.04)}
+.fix-row:last-child{border-bottom:none}
+.fix-name{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:3px}
+.fix-desc{font-size:12px;color:var(--ink3);line-height:1.5}
+
+/* ── Search ── */
+.search-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:20px}
+.search-row{display:flex;gap:8px;margin-bottom:6px}
+.search-input{flex:1;height:38px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;font-size:13px;font-family:var(--mono);background:var(--surface);color:var(--ink);outline:none}
+.search-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,.1)}
+.search-btn{height:38px;padding:0 20px;border:1px solid var(--line2);border-radius:8px;background:var(--surface);cursor:pointer;font-size:13px;color:var(--ink);font-family:var(--sans)}
+.search-btn:hover{background:var(--surface3)}
+
+/* ── Alerts ── */
+.alert{border-radius:8px;padding:12px 15px;font-size:13px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px;border:1px solid transparent}
+.alert svg{width:16px;height:16px;flex-shrink:0;margin-top:1px}
+.alert-success{background:#f0fdf4;border-color:#86efac;color:#166534}
+.alert-info{background:#eff6ff;border-color:#93c5fd;color:#1e40af}
+
+/* ── Results ── */
+.results-bar{font-size:12px;color:var(--ink4);padding:4px 0 10px;display:flex;align-items:center;gap:8px}
+.count-pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:#dcfce7;color:#14532d}
+.results-wrap{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:#0f0f14;color:rgba(255,255,255,.85);padding:9px 15px;text-align:left;font-weight:500;font-size:11.5px;letter-spacing:.2px}
+tbody td{padding:10px 15px;border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--green-bg)}
+
+/* ── Table column widths ── */
+.col-id{width:5%}
+.col-username{width:18%}
+.col-email{width:33%}
+.col-role{width:13%}
+.col-muted{color:var(--ink4)}
+.col-bold{font-weight:500}
+.col-light{color:var(--ink3)}
+
+/* ── Role badges ── */
+.role-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;letter-spacing:.2px}
+.role-admin{background:#fee2e2;color:#7f1d1d}
+.role-manager{background:#fef9c3;color:#713f12}
+.role-user{background:#eff6ff;color:#1e40af}
+
+/* ── Empty state ── */
+.empty-state{text-align:center;padding:40px 24px;color:var(--ink4)}
+.empty-state svg{width:32px;height:32px;margin:0 auto 12px;display:block;opacity:.3}
