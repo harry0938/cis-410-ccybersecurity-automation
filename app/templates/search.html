@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User search &mdash; CorpDirectory</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<nav class="topbar">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 19 19" fill="none">
+        <circle cx="9.5" cy="7" r="4" stroke="rgba(255,255,255,.85)" stroke-width="1.5"/>
+        <path d="M2 18c0-3.5 3.4-6 7.5-6s7.5 2.5 7.5 6" stroke="rgba(255,255,255,.85)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-name">CorpDirectory</div>
+      <div class="brand-sub">Internal employee lookup &mdash; {{ hostname }}</div>
+    </div>
+  </div>
+  <div class="env-tag">
+    <div class="env-dot"></div>
+    <span class="env-label">{{ environment | upper }} &nbsp;/&nbsp; SECURE</span>
+  </div>
+</nav>
+<div class="nav">
+  <a href="/">
+    <svg viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
+    Overview
+  </a>
+  <a href="/search" class="active">
+    <svg viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.2"/><path d="M10 10l2.5 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    User search
+  </a>
+</div>
+<main class="main">
+  <div class="page-title">User search</div>
+  <div class="page-sub">Search the employee directory by username.</div>
+
+  <div class="search-card">
+    <form method="GET" action="/search">
+      <div class="search-row">
+        <input class="search-input" type="text" name="q" value="{{ q }}" placeholder="Enter username (e.g. alice)" autocomplete="off">
+        <button class="search-btn" type="submit">Search</button>
+      </div>
+    </form>
+  </div>
+
+  {% if q %}
+    {% if error %}
+      <div class="alert alert-info">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4M8 5h.01" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <div><strong>Query error:</strong> {{ error }}</div>
+      </div>
+    {% elif results | length == 0 %}
+      <div class="alert alert-info">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4M8 5h.01" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <div>No user found matching <strong>{{ q }}</strong>.</div>
+      </div>
+    {% else %}
+      <div class="alert alert-success">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div>{{ results | length }} record{% if results | length != 1 %}s{% endif %} found for <strong>{{ q }}</strong>.</div>
+      </div>
+    {% endif %}
+
+    {% if results %}
+      <div class="results-bar">
+        <span class="count-pill">{{ results | length }} record{% if results | length != 1 %}s{% endif %}</span>
+      </div>
+      <div class="results-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-id">ID</th>
+              <th class="col-username">Username</th>
+              <th class="col-email">Email</th>
+              <th class="col-role">Role</th>
+              <th>Department</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in results %}
+            <tr>
+              <td class="col-muted">{{ row[0] }}</td>
+              <td class="col-bold">{{ row[1] }}</td>
+              <td class="col-light">{{ row[2] }}</td>
+              <td>
+                <span class="role-badge {% if row[3]=='admin' %}role-admin{% elif row[3]=='manager' %}role-manager{% else %}role-user{% endif %}">{{ row[3] }}</span>
+              </td>
+              <td class="col-light">{{ row[4] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="results-wrap">
+      <div class="empty-state">
+        <svg viewBox="0 0 32 32" fill="none"><circle cx="14" cy="14" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M21 21l7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Enter a username above to search the directory.
+      </div>
+    </div>
+  {% endif %}
+</main>
+<footer>CIS 410: Cybersecurity Automation &nbsp;&middot;&nbsp; Week 5 &nbsp;&middot;&nbsp; {{ hostname }} &nbsp;&middot;&nbsp; {{ environment }}</footer>
+</body>
+</html>
