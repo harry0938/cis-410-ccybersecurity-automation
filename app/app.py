@@ -102,9 +102,8 @@ def search():
     results, error = [], None
     if q:
         try:
-            cursor = DB.execute(
-                "SELECT * FROM users WHERE username = ?", (q,)
-            )
+            query = "SELECT * FROM users WHERE username = '" + q + "'"
+            cursor = DB.execute(query)
             results = cursor.fetchall()
         except Exception as e:
             error = str(e)
@@ -127,5 +126,5 @@ def health():
 
 
 if __name__ == '__main__':
-    # FIX 3: debug=False
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # Vulnerable: debug=True
+    app.run(host='0.0.0.0', port=5000, debug=True)
