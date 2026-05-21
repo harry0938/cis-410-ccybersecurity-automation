@@ -1,0 +1,44 @@
+name: Terraform Plan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/1063496881459/locations/global/workloadIdentityPools/cis410-pool/providers/github-provider
+          service_account: cis410-deploy-sa@stoked-reality-496422-q8.iam.gserviceaccount.com
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: terraform/week7
+        run: terraform init
+
+      - name: Terraform Format Check
+        working-directory: terraform/week7
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        working-directory: terraform/week7
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: terraform/week7
+        run: terraform plan

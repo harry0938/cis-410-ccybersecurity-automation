@@ -1,0 +1,6 @@
+
+# Terraform local variables
+terraform/week7/terraform.tfvars
+
+# Terraform working directory
+**/.terraform/
