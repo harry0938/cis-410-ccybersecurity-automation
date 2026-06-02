@@ -1,0 +1,88 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: stoked-reality-496422-q8
+  REGION: us-west1
+  REPOSITORY_ID: cis410-app
+  SERVICE_NAME: cis410-flask-app
+  WORKLOAD_IDENTITY_PROVIDER: projects/1063496881459/locations/global/workloadIdentityPools/cis410-pool/providers/github-provider
+  SERVICE_ACCOUNT: cis410-deploy-sa@stoked-reality-496422-q8.iam.gserviceaccount.com
+
+jobs:
+  deploy:
+    name: Build, Push, and Deploy
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Terraform init
+        working-directory: terraform/week8
+        run: terraform init
+
+      - name: Ensure Artifact Registry repository
+        working-directory: terraform/week8
+        env:
+          TF_VAR_project_id: ${{ env.PROJECT_ID }}
+          TF_VAR_region: ${{ env.REGION }}
+          TF_VAR_image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_ID }}/flask-app:${{ github.sha }}
+          TF_VAR_commit_sha: ${{ github.sha }}
+        run: terraform apply -auto-approve -target=google_artifact_registry_repository.cis410_app
+
+      - name: Build image
+        run: |
+          IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/flask-app:${GITHUB_SHA::7}"
+          docker build \
+            --tag "${IMAGE}" \
+            --tag "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/flask-app:${GITHUB_SHA}" \
+            .
+
+      - name: Push image
+        run: |
+          docker push "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/flask-app:${GITHUB_SHA::7}"
+          docker push "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/flask-app:${GITHUB_SHA}"
+
+      - name: Terraform apply Cloud Run
+        working-directory: terraform/week8
+        env:
+          TF_VAR_project_id: ${{ env.PROJECT_ID }}
+          TF_VAR_region: ${{ env.REGION }}
+          TF_VAR_image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_ID }}/flask-app:${{ github.sha }}
+          TF_VAR_commit_sha: ${{ github.sha }}
+        run: terraform apply -auto-approve
+
+      - name: Print service URL
+        working-directory: terraform/week8
+        run: |
+          SERVICE_URL="$(terraform output -raw service_url)"
+          echo "Cloud Run URL: ${SERVICE_URL}"
+          curl -fsS "${SERVICE_URL}/health"

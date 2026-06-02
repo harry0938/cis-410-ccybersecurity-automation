@@ -1,6 +1,11 @@
 
+# Python cache files
+__pycache__/
+*.pyc
+
 # Terraform local variables
 terraform/week7/terraform.tfvars
+terraform/week8/terraform.tfvars
 
 # Terraform working directory
 **/.terraform/
