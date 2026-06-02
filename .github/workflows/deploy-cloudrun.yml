@@ -45,6 +45,17 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 
+      - name: Set image tags
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          IMAGE_BASE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/flask-app"
+          {
+            echo "SHORT_SHA=${SHORT_SHA}"
+            echo "IMAGE_BASE=${IMAGE_BASE}"
+            echo "IMAGE_SHORT=${IMAGE_BASE}:${SHORT_SHA}"
+            echo "IMAGE_FULL=${IMAGE_BASE}:${GITHUB_SHA}"
+          } >> "${GITHUB_ENV}"
+
       - name: Terraform init
         working-directory: terraform/week8
         run: terraform init
@@ -54,31 +65,32 @@ jobs:
         env:
           TF_VAR_project_id: ${{ env.PROJECT_ID }}
           TF_VAR_region: ${{ env.REGION }}
-          TF_VAR_image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_ID }}/flask-app:${{ github.sha }}
           TF_VAR_commit_sha: ${{ github.sha }}
-        run: terraform apply -auto-approve -target=google_artifact_registry_repository.cis410_app
-
-      - name: Build image
         run: |
-          IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/flask-app:${GITHUB_SHA::7}"
-          docker build \
-            --tag "${IMAGE}" \
-            --tag "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/flask-app:${GITHUB_SHA}" \
+          export TF_VAR_image="${IMAGE_SHORT}"
+          terraform apply -auto-approve -target=google_artifact_registry_repository.cis410_app
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --tag "${IMAGE_SHORT}" \
+            --tag "${IMAGE_FULL}" \
+            --push \
             .
-
-      - name: Push image
-        run: |
-          docker push "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/flask-app:${GITHUB_SHA::7}"
-          docker push "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY_ID}/flask-app:${GITHUB_SHA}"
 
       - name: Terraform apply Cloud Run
         working-directory: terraform/week8
         env:
           TF_VAR_project_id: ${{ env.PROJECT_ID }}
           TF_VAR_region: ${{ env.REGION }}
-          TF_VAR_image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_ID }}/flask-app:${{ github.sha }}
           TF_VAR_commit_sha: ${{ github.sha }}
-        run: terraform apply -auto-approve
+        run: |
+          export TF_VAR_image="${IMAGE_SHORT}"
+          terraform apply -auto-approve
 
       - name: Print service URL
         working-directory: terraform/week8
