@@ -95,6 +95,6 @@ jobs:
       - name: Print service URL
         working-directory: terraform/week8
         run: |
-          SERVICE_URL="$(terraform output -raw service_url)"
+          SERVICE_URL="$(gcloud run services describe "${SERVICE_NAME}" --region "${REGION}" --format='value(status.url)')"
           echo "Cloud Run URL: ${SERVICE_URL}"
           curl -fsS "${SERVICE_URL}/health"
