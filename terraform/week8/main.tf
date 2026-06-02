@@ -41,8 +41,9 @@ resource "google_artifact_registry_repository" "cis410_app" {
 }
 
 resource "google_cloud_run_v2_service" "flask_app" {
-  name     = var.service_name
-  location = var.region
+  name                = var.service_name
+  location            = var.region
+  deletion_protection = false
 
   template {
     containers {
