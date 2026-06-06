@@ -1,5 +1,4 @@
 import os
-import sqlite3
 import socket
 import datetime
 import secrets
@@ -7,24 +6,133 @@ from flask import Flask, request, jsonify, render_template, g
 
 app = Flask(__name__, static_folder='static')
 
-# ── Initialize in-memory SQLite database ─────────────────────────────────────
-def init_db():
-    conn = sqlite3.connect(':memory:', check_same_thread=False)
-    conn.execute('''CREATE TABLE users (
-        id INTEGER PRIMARY KEY, username TEXT, email TEXT, role TEXT, department TEXT
-    )''')
-    conn.executemany('INSERT INTO users VALUES (?,?,?,?,?)', [
-        (1,'alice',  'alice@corp.local',  'admin',  'Engineering'),
-        (2,'bob',    'bob@corp.local',    'user',   'Marketing'),
-        (3,'charlie','charlie@corp.local','user',   'Finance'),
-        (4,'diana',  'diana@corp.local',  'manager','Engineering'),
-        (5,'eve',    'eve@corp.local',    'admin',  'Security'),
-        (6,'frank',  'frank@corp.local',  'user',   'HR'),
-    ])
-    conn.commit()
-    return conn
+# ── Database configuration ───────────────────────────────────────────────────
+# The application supports two backends:
+#   • Cloud SQL (MySQL) via PyMySQL  — used in deployed / cloud environments
+#   • In-memory SQLite               — fallback for local dev, tests, and CI
+#
+# Cloud SQL is selected automatically when database credentials are supplied
+# through environment variables. No secrets are hardcoded in the source; the
+# connection settings are read from the environment (and, in production, from
+# Google Secret Manager via the deployment pipeline).
+DB_HOST     = os.environ.get('DB_HOST')      # TCP host, e.g. 127.0.0.1 (Cloud SQL Auth Proxy)
+DB_SOCKET   = os.environ.get('DB_SOCKET')    # unix socket, e.g. /cloudsql/<INSTANCE_CONNECTION_NAME>
+DB_USER     = os.environ.get('DB_USER')
+DB_PASSWORD = os.environ.get('DB_PASSWORD')
+DB_NAME     = os.environ.get('DB_NAME', 'foxguard')
+DB_PORT     = int(os.environ.get('DB_PORT', '3306'))
 
-DB = init_db()
+USE_MYSQL = bool(DB_USER and DB_PASSWORD and (DB_HOST or DB_SOCKET))
+
+# Seed data for the employee directory (used when the users table is empty).
+SEED_USERS = [
+    (1, 'alice',   'alice@corp.local',   'admin',   'Engineering'),
+    (2, 'bob',     'bob@corp.local',     'user',    'Marketing'),
+    (3, 'charlie', 'charlie@corp.local', 'user',    'Finance'),
+    (4, 'diana',   'diana@corp.local',   'manager', 'Engineering'),
+    (5, 'eve',     'eve@corp.local',     'admin',   'Security'),
+    (6, 'frank',   'frank@corp.local',   'user',    'HR'),
+]
+
+
+if USE_MYSQL:
+    # ── Cloud SQL (MySQL) backend ────────────────────────────────────────────
+    import pymysql
+    import pymysql.cursors
+
+    def _connect():
+        kwargs = dict(
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            charset='utf8mb4',
+            autocommit=True,
+            cursorclass=pymysql.cursors.Cursor,  # positional tuples: row[0..4]
+        )
+        if DB_SOCKET:
+            kwargs['unix_socket'] = DB_SOCKET
+        else:
+            kwargs['host'] = DB_HOST
+            kwargs['port'] = DB_PORT
+        return pymysql.connect(**kwargs)
+
+    def init_db():
+        conn = _connect()
+        try:
+            with conn.cursor() as cur:
+                cur.execute('''CREATE TABLE IF NOT EXISTS users (
+                    id         INT PRIMARY KEY,
+                    username   VARCHAR(64)  NOT NULL,
+                    email      VARCHAR(128),
+                    role       VARCHAR(32),
+                    department VARCHAR(64)
+                )''')
+                cur.execute('''CREATE TABLE IF NOT EXISTS tickets (
+                    id          INT AUTO_INCREMENT PRIMARY KEY,
+                    title       VARCHAR(160) NOT NULL,
+                    description TEXT,
+                    severity    VARCHAR(16) DEFAULT 'low',
+                    status      VARCHAR(16) DEFAULT 'open',
+                    created_by  VARCHAR(64),
+                    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+                )''')
+                cur.execute('SELECT COUNT(*) FROM users')
+                if cur.fetchone()[0] == 0:
+                    cur.executemany(
+                        'INSERT INTO users (id, username, email, role, department) '
+                        'VALUES (%s, %s, %s, %s, %s)', SEED_USERS
+                    )
+        finally:
+            conn.close()
+
+    def search_users(username):
+        conn = _connect()
+        try:
+            with conn.cursor() as cur:
+                # Parameterized query — prevents SQL injection (%s placeholder).
+                cur.execute(
+                    'SELECT id, username, email, role, department '
+                    'FROM users WHERE username = %s', (username,)
+                )
+                return cur.fetchall()
+        finally:
+            conn.close()
+
+else:
+    # ── In-memory SQLite backend (local dev / CI fallback) ───────────────────
+    import sqlite3
+
+    _DB = sqlite3.connect(':memory:', check_same_thread=False)
+
+    def init_db():
+        _DB.execute('''CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY, username TEXT, email TEXT, role TEXT, department TEXT
+        )''')
+        _DB.execute('''CREATE TABLE IF NOT EXISTS tickets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            severity TEXT DEFAULT 'low',
+            status TEXT DEFAULT 'open',
+            created_by TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )''')
+        cur = _DB.execute('SELECT COUNT(*) FROM users')
+        if cur.fetchone()[0] == 0:
+            _DB.executemany('INSERT INTO users VALUES (?,?,?,?,?)', SEED_USERS)
+        _DB.commit()
+
+    def search_users(username):
+        # Parameterized query — prevents SQL injection (? placeholder).
+        cur = _DB.execute(
+            'SELECT id, username, email, role, department FROM users WHERE username = ?',
+            (username,)
+        )
+        return cur.fetchall()
+
+
+init_db()
+
 
 def ctx():
     return {
@@ -102,10 +210,7 @@ def search():
     results, error = [], None
     if q:
         try:
-            cursor = DB.execute(
-                "SELECT * FROM users WHERE username = ?", (q,)
-            )
-            results = cursor.fetchall()
+            results = search_users(q)
         except Exception as e:
             error = str(e)
     return render_template('search.html', q=q, results=results,
@@ -121,6 +226,7 @@ def health():
         'app':     'corpdirectory',
         'version': os.environ.get('APP_VERSION', '2.0.0-secure'),
         'env':     os.environ.get('ENVIRONMENT', 'dev'),
+        'db':      'mysql' if USE_MYSQL else 'sqlite',
         'host':    socket.gethostname(),
         'time':    datetime.datetime.utcnow().isoformat() + 'Z',
     })
