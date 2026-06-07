@@ -67,6 +67,18 @@ resource "google_cloud_run_v2_service" "flask_app" {
         name  = "COMMIT_SHA"
         value = var.commit_sha
       }
+
+      # Week 9: inject application secret from Secret Manager at runtime
+      # (not stored in CI/CD). Runtime SA has roles/secretmanager.secretAccessor.
+      env {
+        name = "APP_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = "flask-app-secret"
+            version = "latest"
+          }
+        }
+      }
     }
 
     vpc_access {
